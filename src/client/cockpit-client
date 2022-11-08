@@ -57,6 +57,17 @@ def prctl(*args):
 
 prctl.SET_PDEATHSIG = 1
 
+ANACONDA_CONTEXT_MENU_ACTIONS = {
+    "copy",
+    "cut",
+    "delete",
+    "inspect-element",
+    "no-action",
+    "paste",
+    "paste-as-plain-text",
+    "select-all",
+    "unicode",
+}
 
 @Gtk.Template(filename=f'{libexecdir}/cockpit-client.ui')
 class CockpitClientWindow(Gtk.ApplicationWindow):
@@ -79,6 +90,7 @@ class CockpitClientWindow(Gtk.ApplicationWindow):
 
         self.webview.get_settings().set_enable_developer_extras(True)
         self.webview.connect('decide-policy', self.decide_policy)
+        self.webview.connect('context-menu', self.context_menu)
         self.webview.load_uri(uri)
 
         history = self.webview.get_back_forward_list()
@@ -88,6 +100,16 @@ class CockpitClientWindow(Gtk.ApplicationWindow):
         if app.no_ui:
             self.set_titlebar(None)
             self.webview.bind_property('title', self, 'title')
+
+    def context_menu(self, view, menu, event, hit_result):
+        items = menu.get_items()
+        menu.remove_all()
+        for item in items:
+            stock_action = item.get_stock_action()
+            if stock_action is not None \
+                    and stock_action.value_nick in ANACONDA_CONTEXT_MENU_ACTIONS:
+                menu.append(item)
+        return False
 
     def history_changed(self, *args):
         self.lookup_action('go-back').set_enabled(self.webview.can_go_back())
